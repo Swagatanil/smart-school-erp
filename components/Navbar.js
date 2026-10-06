@@ -17,6 +17,7 @@ export default function Navbar() {
     { href: '/timetable', label: 'Timetable' },
     { href: '/staff', label: 'Staff' },
     { href: '/fee-structure', label: 'Fee Structure' },
+    { href: '/certificates', label: 'Certificates' },
   ]
 
   return(
