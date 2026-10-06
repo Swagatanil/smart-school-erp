@@ -11,6 +11,8 @@ export default function StudentsPage() {
   const [parentContact, setParentContact] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [searchTerm, setSearchTerm] = useState('')
+  const [editingId, setEditingId] = useState(null)
   const supabase = createClient()
 
   const fetchStudents = async () => {
@@ -30,32 +32,67 @@ export default function StudentsPage() {
     fetchStudents()
   }, [])
 
-  const handleAddStudent = async (e) => {
+  const resetForm = () => {
+    setName('')
+    setStudentClass('')
+    setSection('')
+    setRollNumber('')
+    setParentContact('')
+    setEditingId(null)
+  }
+
+  const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
     setError('')
 
-    const { error } = await supabase.from('students').insert([
-      {
-        name,
-        class: studentClass,
-        section,
-        roll_number: rollNumber,
-        parent_contact: parentContact,
-      },
-    ])
+    if (editingId) {
+      const { error } = await supabase
+        .from('students')
+        .update({
+          name,
+          class: studentClass,
+          section,
+          roll_number: rollNumber,
+          parent_contact: parentContact,
+        })
+        .eq('id', editingId)
 
-    if (error) {
-      setError(error.message)
+      if (error) {
+        setError(error.message)
+      } else {
+        resetForm()
+        fetchStudents()
+      }
     } else {
-      setName('')
-      setStudentClass('')
-      setSection('')
-      setRollNumber('')
-      setParentContact('')
-      fetchStudents()
+      const { error } = await supabase.from('students').insert([
+        {
+          name,
+          class: studentClass,
+          section,
+          roll_number: rollNumber,
+          parent_contact: parentContact,
+        },
+      ])
+
+      if (error) {
+        setError(error.message)
+      } else {
+        resetForm()
+        fetchStudents()
+      }
     }
     setLoading(false)
+  }
+
+  const handleEdit = (s) => {
+    setEditingId(s.id)
+    setName(s.name || '')
+    setStudentClass(s.class || '')
+    setSection(s.section || '')
+    setRollNumber(s.roll_number || '')
+    setParentContact(s.parent_contact || '')
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleDelete = async (id) => {
@@ -63,9 +100,18 @@ export default function StudentsPage() {
     if (!error) fetchStudents()
   }
 
+  const filteredStudents = students.filter((s) => {
+    const term = searchTerm.toLowerCase()
+    return (
+      s.name?.toLowerCase().includes(term) ||
+      s.class?.toLowerCase().includes(term) ||
+      s.roll_number?.toLowerCase().includes(term)
+    )
+  })
+
   return (
     <div className="min-h-screen bg-slate-50 text-gray-900 p-6">
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold text-indigo-700 mb-6">🎓 Students</h1>
 
         {error && (
@@ -75,9 +121,21 @@ export default function StudentsPage() {
         )}
 
         <form
-          onSubmit={handleAddStudent}
+          onSubmit={handleSubmit}
           className="bg-white text-gray-900 p-6 rounded-xl shadow-md border border-gray-200 mb-8 grid grid-cols-1 md:grid-cols-2 gap-4"
         >
+          {editingId && (
+            <div className="md:col-span-2 bg-yellow-50 text-yellow-800 p-2 rounded-lg text-sm font-medium flex justify-between items-center">
+              ✏️ Editing: {name}
+              <button
+                type="button"
+                onClick={resetForm}
+                className="text-yellow-900 underline text-xs"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
           <input
             type="text"
             placeholder="Student Name"
@@ -120,9 +178,17 @@ export default function StudentsPage() {
             disabled={loading}
             className="bg-indigo-600 text-white p-2 rounded-lg font-semibold hover:bg-indigo-700 transition md:col-span-2 disabled:opacity-50"
           >
-            {loading ? 'Adding...' : 'Add Student'}
+            {loading ? 'Saving...' : editingId ? 'Update Student' : 'Add Student'}
           </button>
         </form>
+
+        <input
+          type="text"
+          placeholder="🔍 Search by name, class or roll number..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full bg-white text-gray-900 placeholder-gray-400 border border-gray-300 p-2 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        />
 
         <div className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
           <table className="w-full text-left text-gray-900">
@@ -137,14 +203,20 @@ export default function StudentsPage() {
               </tr>
             </thead>
             <tbody>
-              {students.map((s) => (
+              {filteredStudents.map((s) => (
                 <tr key={s.id} className="border-t border-gray-200">
                   <td className="p-3">{s.name}</td>
                   <td className="p-3">{s.class}</td>
                   <td className="p-3">{s.section}</td>
                   <td className="p-3">{s.roll_number}</td>
                   <td className="p-3">{s.parent_contact}</td>
-                  <td className="p-3">
+                  <td className="p-3 flex gap-3">
+                    <button
+                      onClick={() => handleEdit(s)}
+                      className="text-indigo-600 hover:underline text-sm font-medium"
+                    >
+                      Edit
+                    </button>
                     <button
                       onClick={() => handleDelete(s.id)}
                       className="text-red-600 hover:underline text-sm font-medium"
@@ -154,10 +226,10 @@ export default function StudentsPage() {
                   </td>
                 </tr>
               ))}
-              {students.length === 0 && (
+              {filteredStudents.length === 0 && (
                 <tr>
                   <td colSpan="6" className="p-4 text-center text-gray-400">
-                    Koi student add nahi hua abhi
+                    Koi student nahi mila
                   </td>
                 </tr>
               )}
