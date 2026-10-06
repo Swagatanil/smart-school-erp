@@ -12,6 +12,8 @@ export default function StaffPage() {
   const [joiningDate, setJoiningDate] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [searchTerm, setSearchTerm] = useState('')
+  const [editingId, setEditingId] = useState(null)
   const supabase = createClient()
 
   const fetchStaff = async () => {
@@ -31,40 +33,86 @@ export default function StaffPage() {
     fetchStaff()
   }, [])
 
-  const handleAddStaff = async (e) => {
+  const resetForm = () => {
+    setName('')
+    setRole('')
+    setSubject('')
+    setContact('')
+    setEmail('')
+    setJoiningDate('')
+    setEditingId(null)
+  }
+
+  const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
     setError('')
 
-    const { error } = await supabase.from('staff').insert([
-      {
-        name,
-        role,
-        subject,
-        contact,
-        email,
-        joining_date: joiningDate || null,
-      },
-    ])
+    if (editingId) {
+      const { error } = await supabase
+        .from('staff')
+        .update({
+          name,
+          role,
+          subject,
+          contact,
+          email,
+          joining_date: joiningDate || null,
+        })
+        .eq('id', editingId)
 
-    if (error) {
-      setError(error.message)
+      if (error) {
+        setError(error.message)
+      } else {
+        resetForm()
+        fetchStaff()
+      }
     } else {
-      setName('')
-      setRole('')
-      setSubject('')
-      setContact('')
-      setEmail('')
-      setJoiningDate('')
-      fetchStaff()
+      const { error } = await supabase.from('staff').insert([
+        {
+          name,
+          role,
+          subject,
+          contact,
+          email,
+          joining_date: joiningDate || null,
+        },
+      ])
+
+      if (error) {
+        setError(error.message)
+      } else {
+        resetForm()
+        fetchStaff()
+      }
     }
     setLoading(false)
+  }
+
+  const handleEdit = (s) => {
+    setEditingId(s.id)
+    setName(s.name || '')
+    setRole(s.role || '')
+    setSubject(s.subject || '')
+    setContact(s.contact || '')
+    setEmail(s.email || '')
+    setJoiningDate(s.joining_date || '')
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleDelete = async (id) => {
     const { error } = await supabase.from('staff').delete().eq('id', id)
     if (!error) fetchStaff()
   }
+
+  const filteredStaff = staffList.filter((s) => {
+    const term = searchTerm.toLowerCase()
+    return (
+      s.name?.toLowerCase().includes(term) ||
+      s.role?.toLowerCase().includes(term) ||
+      s.subject?.toLowerCase().includes(term)
+    )
+  })
 
   return (
     <div className="min-h-screen bg-slate-50 text-gray-900 p-6">
@@ -78,9 +126,21 @@ export default function StaffPage() {
         )}
 
         <form
-          onSubmit={handleAddStaff}
+          onSubmit={handleSubmit}
           className="bg-white p-6 rounded-xl shadow-md border border-gray-200 mb-8 grid grid-cols-1 md:grid-cols-2 gap-4"
         >
+          {editingId && (
+            <div className="md:col-span-2 bg-yellow-50 text-yellow-800 p-2 rounded-lg text-sm font-medium flex justify-between items-center">
+              ✏️ Editing: {name}
+              <button
+                type="button"
+                onClick={resetForm}
+                className="text-yellow-900 underline text-xs"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
           <input
             type="text"
             placeholder="Full Name"
@@ -134,9 +194,17 @@ export default function StaffPage() {
             disabled={loading}
             className="bg-indigo-600 text-white p-2 rounded-lg font-semibold hover:bg-indigo-700 transition md:col-span-2 disabled:opacity-50"
           >
-            {loading ? 'Adding...' : 'Add Staff'}
+            {loading ? 'Saving...' : editingId ? 'Update Staff' : 'Add Staff'}
           </button>
         </form>
+
+        <input
+          type="text"
+          placeholder="🔍 Search by name, role or subject..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full bg-white text-gray-900 placeholder-gray-400 border border-gray-300 p-2 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        />
 
         <div className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
           <table className="w-full text-left text-gray-900">
@@ -151,14 +219,20 @@ export default function StaffPage() {
               </tr>
             </thead>
             <tbody>
-              {staffList.map((s) => (
+              {filteredStaff.map((s) => (
                 <tr key={s.id} className="border-t border-gray-200">
                   <td className="p-3">{s.name}</td>
                   <td className="p-3">{s.role}</td>
                   <td className="p-3">{s.subject}</td>
                   <td className="p-3">{s.contact}</td>
                   <td className="p-3">{s.email}</td>
-                  <td className="p-3">
+                  <td className="p-3 flex gap-3">
+                    <button
+                      onClick={() => handleEdit(s)}
+                      className="text-indigo-600 hover:underline text-sm font-medium"
+                    >
+                      Edit
+                    </button>
                     <button
                       onClick={() => handleDelete(s.id)}
                       className="text-red-600 hover:underline text-sm font-medium"
@@ -168,10 +242,10 @@ export default function StaffPage() {
                   </td>
                 </tr>
               ))}
-              {staffList.length === 0 && (
+              {filteredStaff.length === 0 && (
                 <tr>
                   <td colSpan="6" className="p-4 text-center text-gray-400">
-                    Koi staff add nahi hua abhi
+                    Koi staff nahi mila
                   </td>
                 </tr>
               )}
