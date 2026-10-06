@@ -16,9 +16,10 @@ export default function Navbar() {
     { href: '/notices', label: 'Notices' },
     { href: '/timetable', label: 'Timetable' },
     { href: '/staff', label: 'Staff' },
+    { href: '/fee-structure', label: 'Fee Structure' },
   ]
 
-  return (
+  return(
     <nav className="bg-indigo-700 text-white shadow-md relative z-50">
       <div className="max-w-6xl mx-auto px-4">
         <div className="flex items-center justify-between h-16">
