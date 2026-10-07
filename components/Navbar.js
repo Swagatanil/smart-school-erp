@@ -18,6 +18,8 @@ export default function Navbar() {
     { href: '/staff', label: 'Staff' },
     { href: '/fee-structure', label: 'Fee Structure' },
     { href: '/certificates', label: 'Certificates' },
+    { href: '/transport', label: 'Transport' },
+    { href: '/inventory', label: 'Inventory' },
   ]
 
   return(
