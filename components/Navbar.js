@@ -69,6 +69,8 @@ export default function Navbar() {
     { href: '/certificates', label: 'Certificates', access: 'admin' },
     { href: '/transport', label: 'Transport', access: 'all' },
     { href: '/inventory', label: 'Inventory', access: 'all' },
+    { href: '/whatsapp', label: 'WhatsApp', access: 'all' },
+    { href: '/import', label: 'Import', access: 'admin' },
   ]
 
   const canSee = (access) => {
