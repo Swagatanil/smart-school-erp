@@ -1,8 +1,11 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabaseClient'
+import { useRoleGuard } from '@/lib/useRoleGuard'
 
 export default function StaffPage() {
+  const { loading: roleLoading, allowed } = useRoleGuard(['Principal', 'Admin Staff'])
+
   const [staffList, setStaffList] = useState([])
   const [name, setName] = useState('')
   const [role, setRole] = useState('')
@@ -114,6 +117,26 @@ export default function StaffPage() {
     )
   })
 
+  if (roleLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <p className="text-gray-400">Checking access...</p>
+      </div>
+    )
+  }
+
+  if (!allowed) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="text-center">
+          <div className="text-5xl mb-4">🚫</div>
+          <h1 className="text-2xl font-bold text-gray-800">Access Denied</h1>
+          <p className="text-gray-500 mt-2">Aapko ye page dekhne ki permission nahi hai.</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 text-gray-900 p-6">
       <div className="max-w-5xl mx-auto">
@@ -132,11 +155,7 @@ export default function StaffPage() {
           {editingId && (
             <div className="md:col-span-2 bg-yellow-50 text-yellow-800 p-2 rounded-lg text-sm font-medium flex justify-between items-center">
               ✏️ Editing: {name}
-              <button
-                type="button"
-                onClick={resetForm}
-                className="text-yellow-900 underline text-xs"
-              >
+              <button type="button" onClick={resetForm} className="text-yellow-900 underline text-xs">
                 Cancel
               </button>
             </div>
