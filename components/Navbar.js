@@ -1,29 +1,55 @@
 'use client'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
+import { useRouter, usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabaseClient'
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [role, setRole] = useState(null)
+  const [isStaffLoggedIn, setIsStaffLoggedIn] = useState(false)
+  const [isParent, setIsParent] = useState(false)
+  const router = useRouter()
+  const pathname = usePathname()
   const supabase = createClient()
 
-  useEffect(() => {
-    const fetchRole = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-
+  const loadUser = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      setIsStaffLoggedIn(true)
       const { data } = await supabase
         .from('staff')
         .select('role')
-        .eq('email', user.email)
+        .ilike('email', user.email)
         .maybeSingle()
-
       setRole(data ? data.role : 'Unknown')
+    } else {
+      setIsStaffLoggedIn(false)
+      setRole(null)
     }
+    setIsParent(!!localStorage.getItem('parentMobile'))
+  }
 
-    fetchRole()
+  useEffect(() => {
+    loadUser()
+  }, [pathname])
+
+  useEffect(() => {
+    const { data: listener } = supabase.auth.onAuthStateChange(() => {
+      loadUser()
+    })
+    return () => listener.subscription.unsubscribe()
   }, [])
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    localStorage.removeItem('parentMobile')
+    setIsStaffLoggedIn(false)
+    setIsParent(false)
+    setRole(null)
+    setMenuOpen(false)
+    router.push('/')
+  }
 
   const adminRoles = ['Principal', 'Admin Staff']
   const accountantRoles = ['Accountant']
@@ -53,13 +79,21 @@ export default function Navbar() {
     return false
   }
 
-  const links = allLinks.filter((link) => canSee(link.access))
+  let links = []
+  if (isStaffLoggedIn) {
+    links = allLinks.filter((link) => canSee(link.access))
+  } else if (isParent) {
+    links = [{ href: '/parent-dashboard', label: 'My Child' }]
+  }
+
+  const loggedIn = isStaffLoggedIn || isParent
+  const homeHref = isStaffLoggedIn ? '/dashboard' : isParent ? '/parent-dashboard' : '/'
 
   return (
     <nav className="bg-indigo-700 text-white shadow-md relative z-50">
       <div className="max-w-6xl mx-auto px-4">
         <div className="flex items-center justify-between h-16">
-          <Link href="/dashboard" className="flex items-center gap-2 font-bold text-lg">
+          <Link href={homeHref} className="flex items-center gap-2 font-bold text-lg">
             <span className="text-2xl">🏫</span>
             <span>ABC Public School</span>
           </Link>
@@ -70,6 +104,26 @@ export default function Navbar() {
                 {link.label}
               </Link>
             ))}
+            {loggedIn ? (
+              <button
+                onClick={handleLogout}
+                className="bg-white text-indigo-700 px-3 py-1 rounded-lg font-semibold hover:bg-indigo-50 transition"
+              >
+                Logout
+              </button>
+            ) : (
+              <>
+                <Link href="/login" className="hover:text-indigo-200 transition whitespace-nowrap">
+                  Staff Login
+                </Link>
+                <Link
+                  href="/parent-login"
+                  className="bg-white text-indigo-700 px-3 py-1 rounded-lg font-semibold hover:bg-indigo-50 transition whitespace-nowrap"
+                >
+                  Parent Login
+                </Link>
+              </>
+            )}
           </div>
 
           <button className="md:hidden text-2xl" onClick={() => setMenuOpen(!menuOpen)}>
@@ -89,6 +143,18 @@ export default function Navbar() {
                 {link.label}
               </Link>
             ))}
+            {loggedIn ? (
+              <button onClick={handleLogout} className="text-left font-semibold">
+                Logout
+              </button>
+            ) : (
+              <>
+                <Link href="/login" onClick={() => setMenuOpen(false)}>Staff Login</Link>
+                <Link href="/parent-login" onClick={() => setMenuOpen(false)} className="font-semibold">
+                  Parent Login
+                </Link>
+              </>
+            )}
           </div>
         )}
       </div>

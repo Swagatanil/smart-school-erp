@@ -15,10 +15,9 @@ export default function ParentLoginPage() {
     setLoading(true)
     setError('')
 
-    const { data, error } = await supabase
-      .from('students')
-      .select('*')
-      .eq('parent_contact', mobile)
+    const { data, error } = await supabase.rpc('parent_portal', {
+      p_mobile: mobile.trim(),
+    })
 
     if (error) {
       setError(error.message)
@@ -32,7 +31,7 @@ export default function ParentLoginPage() {
       return
     }
 
-    localStorage.setItem('parentMobile', mobile)
+    localStorage.setItem('parentMobile', mobile.trim())
     router.push('/parent-dashboard')
   }
 
@@ -54,7 +53,7 @@ export default function ParentLoginPage() {
           placeholder="Mobile Number"
           value={mobile}
           onChange={(e) => setMobile(e.target.value)}
-          className="w-full border border-gray-300 p-3 rounded-lg mb-6 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          className="w-full border border-gray-300 text-gray-900 placeholder-gray-400 p-3 rounded-lg mb-6 focus:outline-none focus:ring-2 focus:ring-emerald-500"
           required
         />
 
@@ -63,7 +62,7 @@ export default function ParentLoginPage() {
           disabled={loading}
           className="w-full bg-emerald-600 text-white p-3 rounded-lg font-semibold hover:bg-emerald-700 transition disabled:opacity-50"
         >
-          {loading ? 'Checking...' : 'View My Child\'s Details'}
+          {loading ? 'Checking...' : "View My Child's Details"}
         </button>
       </form>
     </div>

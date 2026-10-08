@@ -6,11 +6,13 @@ import { createClient } from '@/lib/supabaseClient'
 export default function ParentDashboard() {
   const [children, setChildren] = useState([])
   const [selectedChild, setSelectedChild] = useState(null)
-  const [attendance, setAttendance] = useState([])
-  const [fees, setFees] = useState([])
-  const [marks, setMarks] = useState([])
   const router = useRouter()
   const supabase = createClient()
+
+  const clearAndExit = () => {
+    localStorage.removeItem('parentMobile')
+    router.push('/parent-login')
+  }
 
   useEffect(() => {
     const mobile = localStorage.getItem('parentMobile')
@@ -19,55 +21,21 @@ export default function ParentDashboard() {
       return
     }
 
-    const fetchChildren = async () => {
-      const { data } = await supabase
-        .from('students')
-        .select('*')
-        .eq('parent_contact', mobile)
+    const load = async () => {
+      const { data, error } = await supabase.rpc('parent_portal', {
+        p_mobile: mobile,
+      })
 
-      if (data && data.length > 0) {
-        setChildren(data)
-        setSelectedChild(data[0])
-      } else {
-        router.push('/parent-login')
+      if (error || !data || data.length === 0) {
+        clearAndExit()
+        return
       }
+      setChildren(data)
+      setSelectedChild(data[0])
     }
 
-    fetchChildren()
+    load()
   }, [])
-
-  useEffect(() => {
-    if (!selectedChild) return
-
-    const fetchChildData = async () => {
-      const { data: attendanceData } = await supabase
-        .from('attendance')
-        .select('*')
-        .eq('student-id', selectedChild.id)
-        .order('date', { ascending: false })
-        .limit(10)
-      if (attendanceData) setAttendance(attendanceData)
-
-      const { data: feesData } = await supabase
-        .from('fees')
-        .select('*')
-        .eq('student-id', selectedChild.id)
-      if (feesData) setFees(feesData)
-
-      const { data: marksData } = await supabase
-        .from('marks')
-        .select('*')
-        .eq('student-id', selectedChild.id)
-      if (marksData) setMarks(marksData)
-    }
-
-    fetchChildData()
-  }, [selectedChild])
-
-  const handleLogout = () => {
-    localStorage.removeItem('parentMobile')
-    router.push('/parent-login')
-  }
 
   if (!selectedChild) {
     return (
@@ -82,10 +50,7 @@ export default function ParentDashboard() {
       <div className="max-w-4xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-emerald-700">👨‍👩‍👧 Parent Dashboard</h1>
-          <button
-            onClick={handleLogout}
-            className="text-red-600 hover:underline text-sm font-medium"
-          >
+          <button onClick={clearAndExit} className="text-red-600 hover:underline text-sm font-medium">
             Logout
           </button>
         </div>
@@ -119,21 +84,19 @@ export default function ParentDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
             <h3 className="font-bold text-emerald-700 mb-3">📅 Recent Attendance</h3>
-            {attendance.length === 0 && <p className="text-gray-400 text-sm">Koi record nahi hai</p>}
-            {attendance.map((a) => (
+            {selectedChild.attendance.length === 0 && <p className="text-gray-400 text-sm">Koi record nahi hai</p>}
+            {selectedChild.attendance.map((a) => (
               <div key={a.id} className="flex justify-between text-sm py-1 border-t border-gray-100 first:border-t-0">
                 <span>{a.date}</span>
-                <span className={a.status === 'Present' ? 'text-green-600' : 'text-red-600'}>
-                  {a.status}
-                </span>
+                <span className={a.status === 'Present' ? 'text-green-600' : 'text-red-600'}>{a.status}</span>
               </div>
             ))}
           </div>
 
           <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
             <h3 className="font-bold text-emerald-700 mb-3">💰 Fees</h3>
-            {fees.length === 0 && <p className="text-gray-400 text-sm">Koi record nahi hai</p>}
-            {fees.map((f) => (
+            {selectedChild.fees.length === 0 && <p className="text-gray-400 text-sm">Koi record nahi hai</p>}
+            {selectedChild.fees.map((f) => (
               <div key={f.id} className="text-sm py-1 border-t border-gray-100 first:border-t-0">
                 <div className="flex justify-between">
                   <span>Due: {f.due_date}</span>
@@ -148,8 +111,8 @@ export default function ParentDashboard() {
 
           <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 md:col-span-2">
             <h3 className="font-bold text-emerald-700 mb-3">📝 Marks</h3>
-            {marks.length === 0 && <p className="text-gray-400 text-sm">Koi record nahi hai</p>}
-            {marks.map((m) => (
+            {selectedChild.marks.length === 0 && <p className="text-gray-400 text-sm">Koi record nahi hai</p>}
+            {selectedChild.marks.map((m) => (
               <div key={m.id} className="flex justify-between text-sm py-1 border-t border-gray-100 first:border-t-0">
                 <span>{m.exam_name} — {m.subject}</span>
                 <span>{m.marks_obtained} / {m.max_marks}</span>
