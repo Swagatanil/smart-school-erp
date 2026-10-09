@@ -8,18 +8,12 @@ const todayStr = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
-const TABS = [
-  { key: 'all', label: 'Sab' },
-  { key: 'present', label: 'Present' },
-  { key: 'absent', label: 'Absent' },
-  { key: 'notmarked', label: 'Mark nahi hui' },
-]
-
 export default function StaffAttendancePage() {
   const [staff, setStaff] = useState([])
   const [date, setDate] = useState(todayStr())
-  const [statusMap, setStatusMap] = useState({})
-  const [view, setView] = useState('all')
+  const [absent, setAbsent] = useState({})
+  const [alreadySaved, setAlreadySaved] = useState(false)
+  const [search, setSearch] = useState('')
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
@@ -50,69 +44,70 @@ export default function StaffAttendancePage() {
       }
       const map = {}
       data.forEach((a) => {
-        map[a.staff_id] = a.status
+        if (a.status === 'Absent') map[a.staff_id] = true
       })
-      setStatusMap(map)
+      setAbsent(map)
+      setAlreadySaved(data.length > 0)
     }
     load()
   }, [date])
 
-  const mark = (id, status) => setStatusMap((prev) => ({ ...prev, [id]: status }))
-
-  const markAllPresent = () => {
-    const map = {}
-    staff.forEach((s) => {
-      map[s.id] = 'Present'
+  const toggle = (id) =>
+    setAbsent((prev) => {
+      const next = { ...prev }
+      if (next[id]) delete next[id]
+      else next[id] = true
+      return next
     })
-    setStatusMap(map)
-  }
 
   const handleSave = async () => {
+    if (staff.length === 0) return
     setSaving(true)
     setError('')
     setMessage('')
-    const records = staff
-      .filter((s) => statusMap[s.id])
-      .map((s) => ({ staff_id: s.id, date, status: statusMap[s.id] }))
 
-    if (records.length === 0) {
-      setMessage('Koi attendance mark nahi ki gayi.')
-      setSaving(false)
-      return
-    }
+    const records = staff.map((s) => ({
+      staff_id: s.id,
+      date,
+      status: absent[s.id] ? 'Absent' : 'Present',
+    }))
 
     const { error } = await supabase
       .from('staff_attendance')
       .upsert(records, { onConflict: 'staff_id,date' })
 
-    if (error) setError(error.message)
-    else setMessage('Staff attendance save ho gayi!')
+    if (error) {
+      setError(error.message)
+    } else {
+      setAlreadySaved(true)
+      const a = records.filter((r) => r.status === 'Absent').length
+      setMessage(`Staff attendance save ho gayi! Present: ${records.length - a}, Absent: ${a}`)
+    }
     setSaving(false)
   }
 
-  const present = staff.filter((s) => statusMap[s.id] === 'Present').length
-  const absent = staff.filter((s) => statusMap[s.id] === 'Absent').length
-  const marked = present + absent
-  const notMarked = staff.length - marked
-  const presentPct = marked > 0 ? Math.round((present / marked) * 100) : null
+  const total = staff.length
+  const absentCount = staff.filter((s) => absent[s.id]).length
+  const presentCount = total - absentCount
+  const presentPct = total > 0 ? Math.round((presentCount / total) * 100) : null
 
   const shown = staff.filter((s) => {
-    const st = statusMap[s.id]
-    if (view === 'present') return st === 'Present'
-    if (view === 'absent') return st === 'Absent'
-    if (view === 'notmarked') return !st
-    return true
+    const t = search.toLowerCase()
+    return s.name?.toLowerCase().includes(t) || s.role?.toLowerCase().includes(t)
   })
 
   return (
     <div className="min-h-screen bg-slate-50 text-gray-900 p-6">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
+      <div className="max-w-3xl mx-auto">
+        <div className="flex items-center justify-between mb-2">
           <h1 className="text-3xl font-bold text-purple-700">👩‍🏫 Staff Attendance</h1>
           <Link href="/dashboard" className="text-indigo-600 hover:underline text-sm font-medium">
             ← Dashboard
           </Link>
         </div>
+        <p className="text-gray-500 text-sm mb-6">
+          Sab default <strong>Present</strong> hain. Sirf <strong>absent</strong> wale par tick lagao.
+        </p>
 
         {error && (
           <p className="bg-red-50 text-red-700 border border-red-300 p-3 rounded-lg mb-4 text-sm">{error}</p>
@@ -120,6 +115,11 @@ export default function StaffAttendancePage() {
         {message && (
           <p className="bg-green-50 text-green-700 border border-green-300 p-3 rounded-lg mb-4 text-sm">
             {message}
+          </p>
+        )}
+        {!alreadySaved && staff.length > 0 && (
+          <p className="bg-yellow-50 text-yellow-800 border border-yellow-200 p-3 rounded-lg mb-4 text-sm">
+            Is date ki attendance abhi save nahi hui. Save dabane par sab Present aur tick wale Absent save honge.
           </p>
         )}
 
@@ -133,106 +133,70 @@ export default function StaffAttendancePage() {
               className="border border-gray-300 text-gray-900 p-1 rounded-lg text-sm"
             />
           </div>
-          <button onClick={markAllPresent} className="text-purple-700 hover:underline text-sm font-medium">
-            Sabko Present mark karo
-          </button>
+          <input
+            type="text"
+            placeholder="🔍 Naam ya role..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="border border-gray-300 text-gray-900 placeholder-gray-400 p-1 rounded-lg text-sm flex-1 min-w-40"
+          />
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div className="bg-indigo-50 text-indigo-700 rounded-xl p-4 text-center shadow-md">
+            <div className="text-3xl font-bold">{total}</div>
+            <div className="text-sm font-medium">Total</div>
+          </div>
+          <div className="bg-green-50 text-green-700 rounded-xl p-4 text-center shadow-md">
+            <div className="text-3xl font-bold">{presentCount}</div>
+            <div className="text-sm font-medium">Present</div>
+          </div>
+          <div className="bg-red-50 text-red-700 rounded-xl p-4 text-center shadow-md">
+            <div className="text-3xl font-bold">{absentCount}</div>
+            <div className="text-sm font-medium">Absent</div>
+          </div>
           <div className="bg-purple-50 text-purple-700 rounded-xl p-4 text-center shadow-md">
             <div className="text-3xl font-bold">{presentPct === null ? '—' : presentPct + '%'}</div>
             <div className="text-sm font-medium">Present %</div>
           </div>
-          <div className="bg-green-50 text-green-700 rounded-xl p-4 text-center shadow-md">
-            <div className="text-3xl font-bold">{present}</div>
-            <div className="text-sm font-medium">Present</div>
-          </div>
-          <div className="bg-red-50 text-red-700 rounded-xl p-4 text-center shadow-md">
-            <div className="text-3xl font-bold">{absent}</div>
-            <div className="text-sm font-medium">Absent</div>
-          </div>
-          <div className="bg-gray-100 text-gray-700 rounded-xl p-4 text-center shadow-md">
-            <div className="text-3xl font-bold">{notMarked}</div>
-            <div className="text-sm font-medium">Mark nahi hui</div>
-          </div>
-        </div>
-
-        <div className="flex gap-2 mb-4 flex-wrap">
-          {TABS.map((t) => (
-            <button
-              key={t.key}
-              onClick={() => setView(t.key)}
-              className={`px-4 py-1 rounded-full text-sm font-semibold border transition ${
-                view === t.key
-                  ? 'bg-purple-600 text-white border-purple-600'
-                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
         </div>
 
         <div className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
-          <table className="w-full text-left text-gray-900">
-            <thead className="bg-purple-50 text-purple-800">
-              <tr>
-                <th className="p-3">Name</th>
-                <th className="p-3">Role</th>
-                <th className="p-3">Contact</th>
-                <th className="p-3">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {shown.map((s) => (
-                <tr key={s.id} className="border-t border-gray-200">
-                  <td className="p-3">{s.name}</td>
-                  <td className="p-3">
-                    {s.role}
-                    {s.subject ? ` (${s.subject})` : ''}
-                  </td>
-                  <td className="p-3">{s.contact}</td>
-                  <td className="p-3 flex gap-2">
-                    <button
-                      onClick={() => mark(s.id, 'Present')}
-                      className={`px-3 py-1 rounded-lg text-sm font-medium border ${
-                        statusMap[s.id] === 'Present'
-                          ? 'bg-green-600 text-white border-green-600'
-                          : 'bg-white text-gray-700 border-gray-300'
-                      }`}
-                    >
-                      Present
-                    </button>
-                    <button
-                      onClick={() => mark(s.id, 'Absent')}
-                      className={`px-3 py-1 rounded-lg text-sm font-medium border ${
-                        statusMap[s.id] === 'Absent'
-                          ? 'bg-red-600 text-white border-red-600'
-                          : 'bg-white text-gray-700 border-gray-300'
-                      }`}
-                    >
-                      Absent
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {shown.length === 0 && (
-                <tr>
-                  <td colSpan="4" className="p-4 text-center text-gray-400">
-                    Koi staff nahi mila
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+          {shown.map((s) => (
+            <label
+              key={s.id}
+              className={`flex items-center justify-between p-3 border-t border-gray-100 first:border-t-0 cursor-pointer ${
+                absent[s.id] ? 'bg-red-50' : ''
+              }`}
+            >
+              <div>
+                <div className="font-medium text-gray-900">{s.name}</div>
+                <div className="text-xs text-gray-500">
+                  {s.role}
+                  {s.subject ? ` (${s.subject})` : ''}
+                  {s.contact ? ` • ${s.contact}` : ''}
+                </div>
+              </div>
+              <span className="flex items-center gap-2 text-sm">
+                <span className={absent[s.id] ? 'text-red-700 font-semibold' : 'text-gray-400'}>Absent</span>
+                <input
+                  type="checkbox"
+                  checked={!!absent[s.id]}
+                  onChange={() => toggle(s.id)}
+                  className="w-5 h-5 accent-red-600"
+                />
+              </span>
+            </label>
+          ))}
+          {shown.length === 0 && <p className="p-4 text-center text-gray-400">Koi staff nahi mila</p>}
         </div>
 
         <button
           onClick={handleSave}
-          disabled={saving}
+          disabled={saving || staff.length === 0}
           className="mt-6 w-full bg-purple-600 text-white p-3 rounded-lg font-semibold hover:bg-purple-700 transition disabled:opacity-50"
         >
-          {saving ? 'Saving...' : 'Save Staff Attendance'}
+          {saving ? 'Saving...' : `Save Staff Attendance (${presentCount} Present, ${absentCount} Absent)`}
         </button>
       </div>
     </div>
