@@ -10,7 +10,153 @@ const PAD = { l: 44, r: 30, t: 28, b: 54 }
 const pctOf = (a, b) => (b > 0 ? Math.round((a / b) * 100) : 0)
 const clamp = (p) => Math.min(Math.max(p, 0), 100)
 const short = (s, n = 11) => (s.length > n ? s.slice(0, n - 1) + '…' : s)
+const pad2 = (n) => String(n).padStart(2, '0')
 
+const MONTHS = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+]
+const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
+
+// ================= Attendance calendar =================
+function AttendanceCalendar({ attendance, periods }) {
+  const now = new Date()
+  const [ym, setYm] = useState({ y: now.getFullYear(), m: now.getMonth() })
+
+  const statusMap = {}
+  attendance.forEach((a) => {
+    statusMap[a.date] = a.status
+  })
+  const periodMap = {}
+  periods.forEach((p) => {
+    periodMap[String(p.day).trim().toLowerCase()] = p.periods
+  })
+
+  const first = new Date(ym.y, ym.m, 1)
+  const daysInMonth = new Date(ym.y, ym.m + 1, 0).getDate()
+  const offset = (first.getDay() + 6) % 7 // Monday se shuru
+
+  const cells = []
+  for (let i = 0; i < offset; i++) cells.push(null)
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d)
+
+  let presentDays = 0
+  let absentDays = 0
+  for (let d = 1; d <= daysInMonth; d++) {
+    const st = statusMap[`${ym.y}-${pad2(ym.m + 1)}-${pad2(d)}`]
+    if (st === 'Present') presentDays++
+    if (st === 'Absent') absentDays++
+  }
+  const markedDays = presentDays + absentDays
+  const monthPct = markedDays > 0 ? Math.round((presentDays / markedDays) * 100) : null
+
+  const isCurrentMonth = ym.y === now.getFullYear() && ym.m === now.getMonth()
+  const isFuture = ym.y > now.getFullYear() || (ym.y === now.getFullYear() && ym.m > now.getMonth())
+
+  const go = (delta) => {
+    const d = new Date(ym.y, ym.m + delta, 1)
+    setYm({ y: d.getFullYear(), m: d.getMonth() })
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <button
+          type="button"
+          onClick={() => go(-1)}
+          className="px-3 py-1 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
+        >
+          ◀
+        </button>
+        <h4 className="font-semibold text-gray-800">
+          {MONTHS[ym.m]} {ym.y}
+        </h4>
+        <button
+          type="button"
+          onClick={() => go(1)}
+          disabled={isCurrentMonth || isFuture}
+          className="px-3 py-1 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-30"
+        >
+          ▶
+        </button>
+      </div>
+
+      <div className="grid grid-cols-3 gap-3 mb-4">
+        <div className="bg-green-50 text-green-700 rounded-lg p-2 text-center">
+          <div className="text-xl font-bold">{presentDays}</div>
+          <div className="text-xs font-medium">Present din</div>
+        </div>
+        <div className="bg-red-50 text-red-700 rounded-lg p-2 text-center">
+          <div className="text-xl font-bold">{absentDays}</div>
+          <div className="text-xs font-medium">Absent din</div>
+        </div>
+        <div className="bg-indigo-50 text-indigo-700 rounded-lg p-2 text-center">
+          <div className="text-xl font-bold">{monthPct === null ? '—' : monthPct + '%'}</div>
+          <div className="text-xs font-medium">Attendance</div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-7 gap-1 mb-1">
+        {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((d) => (
+          <div key={d} className="text-center text-xs font-medium text-gray-500">
+            {d}
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-7 gap-1">
+        {cells.map((d, i) => {
+          if (d === null) return <div key={'e' + i} />
+          const key = `${ym.y}-${pad2(ym.m + 1)}-${pad2(d)}`
+          const st = statusMap[key]
+          const wd = DAY_NAMES[new Date(ym.y, ym.m, d).getDay()]
+          const n = periodMap[wd]
+          const isToday = isCurrentMonth && d === now.getDate()
+
+          let cls = 'bg-gray-50 border-gray-200 text-gray-400'
+          let label = ''
+          if (st === 'Present') {
+            cls = 'bg-green-100 border-green-400 text-green-800'
+            label = n ? `${n}/${n}` : 'P'
+          } else if (st === 'Absent') {
+            cls = 'bg-red-100 border-red-400 text-red-700'
+            label = n ? `0/${n}` : 'A'
+          }
+
+          return (
+            <div
+              key={key}
+              className={`border rounded-lg h-14 flex flex-col items-center justify-center ${cls} ${
+                isToday ? 'ring-2 ring-indigo-500' : ''
+              }`}
+            >
+              <span className="text-sm font-semibold leading-none">{d}</span>
+              <span className="text-[11px] font-bold leading-none mt-1">{label}</span>
+            </div>
+          )
+        })}
+      </div>
+
+      <div className="flex flex-wrap gap-4 mt-4 text-xs text-gray-600">
+        <span className="flex items-center gap-1">
+          <span className="inline-block w-3 h-3 rounded bg-green-100 border border-green-400" /> Present (periods)
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="inline-block w-3 h-3 rounded bg-red-100 border border-red-400" /> Absent
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="inline-block w-3 h-3 rounded bg-gray-50 border border-gray-200" /> Record nahi / chhutti
+        </span>
+      </div>
+      <p className="text-xs text-gray-400 mt-2">
+        Attendance din ke hisaab se mark hoti hai, isliye Present din me us din ke saare periods Present maane gaye
+        hain.
+      </p>
+    </div>
+  )
+}
+
+// ================= Marks line graphs =================
 function buildMarksData(marks) {
   const sorted = [...marks].sort((a, b) => a.id - b.id)
   const exams = []
@@ -54,7 +200,6 @@ function LineChart({ exams, series, activeIndex, onSelect, showLabels, subLabels
   return (
     <div className="overflow-x-auto">
       <svg viewBox={`0 0 ${width} ${H}`} width={width} height={H} className="max-w-none">
-        {/* chuna hua test highlight */}
         <rect
           x={x(activeIndex) - colW / 2}
           y={PAD.t - 10}
@@ -64,7 +209,6 @@ function LineChart({ exams, series, activeIndex, onSelect, showLabels, subLabels
           rx="6"
         />
 
-        {/* grid */}
         {[0, 25, 50, 75, 100].map((v) => (
           <g key={v}>
             <line x1={PAD.l} x2={PAD.l + innerW} y1={y(v)} y2={y(v)} stroke="#e5e7eb" />
@@ -74,7 +218,6 @@ function LineChart({ exams, series, activeIndex, onSelect, showLabels, subLabels
           </g>
         ))}
 
-        {/* lines */}
         {series.map((s) => {
           let d = ''
           let prev = false
@@ -129,7 +272,6 @@ function LineChart({ exams, series, activeIndex, onSelect, showLabels, subLabels
           )
         })}
 
-        {/* x labels + click area */}
         {exams.map((e, i) => (
           <g key={e.key} onClick={() => onSelect(e.key)} style={{ cursor: 'pointer' }}>
             <rect
@@ -200,7 +342,6 @@ function MarksCharts({ marks }) {
 
   return (
     <div className="space-y-8">
-      {/* Graph 1: overall */}
       <div>
         <h4 className="font-semibold text-gray-800 mb-1">Overall result</h4>
         <p className="text-xs text-gray-500 mb-3">
@@ -219,7 +360,6 @@ function MarksCharts({ marks }) {
         )}
       </div>
 
-      {/* Graph 2: subject-wise trend */}
       <div>
         <h4 className="font-semibold text-gray-800 mb-2">Subject-wise (har subject ka progress)</h4>
         <div className="flex flex-wrap gap-3 mb-3">
@@ -239,7 +379,6 @@ function MarksCharts({ marks }) {
         />
       </div>
 
-      {/* Chuna hua test ke subject-wise marks */}
       <div>
         <h4 className="font-semibold text-gray-800 mb-3">{activeExam.name} — subject-wise marks</h4>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -262,6 +401,7 @@ function MarksCharts({ marks }) {
   )
 }
 
+// ================= Page =================
 export default function ParentDashboard() {
   const [children, setChildren] = useState([])
   const [selectedChild, setSelectedChild] = useState(null)
@@ -306,8 +446,8 @@ export default function ParentDashboard() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-gray-900 p-6">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
+      <div className="max-w-4xl mx-auto space-y-6">
+        <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold text-emerald-700">👨‍👩‍👧 Parent Dashboard</h1>
           <button onClick={clearAndExit} className="text-red-600 hover:underline text-sm font-medium">
             Logout
@@ -315,7 +455,7 @@ export default function ParentDashboard() {
         </div>
 
         {children.length > 1 && (
-          <div className="mb-6 bg-white p-4 rounded-xl shadow-md border border-gray-200">
+          <div className="bg-white p-4 rounded-xl shadow-md border border-gray-200">
             <label className="font-medium text-gray-700 mr-3">Select Child:</label>
             <select
               value={selectedChild.id}
@@ -333,56 +473,52 @@ export default function ParentDashboard() {
           </div>
         )}
 
-        <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 mb-6">
+        <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
           <h2 className="text-xl font-bold text-gray-800">{selectedChild.name}</h2>
           <p className="text-gray-500 text-sm">
             Class {selectedChild.class} {selectedChild.section} • Roll No: {selectedChild.roll_number}
           </p>
         </div>
 
-        <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 mb-6">
+        <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
+          <h3 className="font-bold text-emerald-700 mb-4">📅 Attendance</h3>
+          <AttendanceCalendar
+            key={selectedChild.id}
+            attendance={selectedChild.attendance || []}
+            periods={selectedChild.periods || []}
+          />
+        </div>
+
+        <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
           <h3 className="font-bold text-emerald-700 mb-4">📈 Marks Graph</h3>
           <MarksCharts key={selectedChild.id} marks={selectedChild.marks} />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
-            <h3 className="font-bold text-emerald-700 mb-3">📅 Recent Attendance</h3>
-            {selectedChild.attendance.length === 0 && <p className="text-gray-400 text-sm">Koi record nahi hai</p>}
-            {selectedChild.attendance.map((a) => (
-              <div key={a.id} className="flex justify-between text-sm py-1 border-t border-gray-100 first:border-t-0">
-                <span>{a.date}</span>
-                <span className={a.status === 'Present' ? 'text-green-600' : 'text-red-600'}>{a.status}</span>
+        <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
+          <h3 className="font-bold text-emerald-700 mb-3">💰 Fees</h3>
+          {selectedChild.fees.length === 0 && <p className="text-gray-400 text-sm">Koi record nahi hai</p>}
+          {selectedChild.fees.map((f) => (
+            <div key={f.id} className="text-sm py-1 border-t border-gray-100 first:border-t-0">
+              <div className="flex justify-between">
+                <span>Due: {f.due_date}</span>
+                <span>₹{f.paid_amount} / ₹{f.amount}</span>
               </div>
-            ))}
-          </div>
+              <span className={`text-xs ${f.status === 'Paid' ? 'text-green-600' : 'text-red-600'}`}>
+                {f.status}
+              </span>
+            </div>
+          ))}
+        </div>
 
-          <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
-            <h3 className="font-bold text-emerald-700 mb-3">💰 Fees</h3>
-            {selectedChild.fees.length === 0 && <p className="text-gray-400 text-sm">Koi record nahi hai</p>}
-            {selectedChild.fees.map((f) => (
-              <div key={f.id} className="text-sm py-1 border-t border-gray-100 first:border-t-0">
-                <div className="flex justify-between">
-                  <span>Due: {f.due_date}</span>
-                  <span>₹{f.paid_amount} / ₹{f.amount}</span>
-                </div>
-                <span className={`text-xs ${f.status === 'Paid' ? 'text-green-600' : 'text-red-600'}`}>
-                  {f.status}
-                </span>
-              </div>
-            ))}
-          </div>
-
-          <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 md:col-span-2">
-            <h3 className="font-bold text-emerald-700 mb-3">📝 Marks (detail)</h3>
-            {selectedChild.marks.length === 0 && <p className="text-gray-400 text-sm">Koi record nahi hai</p>}
-            {selectedChild.marks.map((m) => (
-              <div key={m.id} className="flex justify-between text-sm py-1 border-t border-gray-100 first:border-t-0">
-                <span>{m.exam_name} — {m.subject}</span>
-                <span>{m.marks_obtained} / {m.max_marks}</span>
-              </div>
-            ))}
-          </div>
+        <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
+          <h3 className="font-bold text-emerald-700 mb-3">📝 Marks (detail)</h3>
+          {selectedChild.marks.length === 0 && <p className="text-gray-400 text-sm">Koi record nahi hai</p>}
+          {selectedChild.marks.map((m) => (
+            <div key={m.id} className="flex justify-between text-sm py-1 border-t border-gray-100 first:border-t-0">
+              <span>{m.exam_name} — {m.subject}</span>
+              <span>{m.marks_obtained} / {m.max_marks}</span>
+            </div>
+          ))}
         </div>
       </div>
     </div>
