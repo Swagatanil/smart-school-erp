@@ -203,6 +203,7 @@ export default function StudentsPage() {
                 <th className="p-3">Class</th>
                 <th className="p-3">Section</th>
                 <th className="p-3">Roll No</th>
+                <th className="p-3">Adm. No</th>
                 <th className="p-3">Category</th>
                 <th className="p-3">Parent Contact</th>
                 <th className="p-3"></th>
@@ -216,6 +217,7 @@ export default function StudentsPage() {
                   <td className="p-3">{s.class}</td>
                   <td className="p-3">{s.section}</td>
                   <td className="p-3">{s.roll_number}</td>
+                   <td className="p-3">{s.admission_no || '—'}</td>
                   <td className="p-3">{s.category || '—'}</td>
                   <td className="p-3">{s.parent_contact}</td>
                   <td className="p-3 flex gap-3">
@@ -236,7 +238,7 @@ export default function StudentsPage() {
               ))}
               {filteredStudents.length === 0 && (
                 <tr>
-                  <td colSpan="8" className="p-4 text-center text-gray-400">
+                  <td colSpan="9" className="p-4 text-center text-gray-400">
                     Koi student nahi mila
                   </td>
                 </tr>

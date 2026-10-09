@@ -19,6 +19,7 @@ export default function AdmissionsPage() {
   const [category, setCategory] = useState('')
   const [notes, setNotes] = useState('')
   const [loading, setLoading] = useState(false)
+  const [admittingId, setAdmittingId] = useState(null)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const [expectedFee, setExpectedFee] = useState(null)
@@ -60,27 +61,33 @@ export default function AdmissionsPage() {
     e.preventDefault()
     setLoading(true)
     setError('')
+    setMessage('')
 
-    const { error } = await supabase.from('admissions').insert([
-      {
-        student_name: studentName,
-        gender: gender || null,
-        father_name: fatherName,
-        mother_name: motherName,
-        contact: contact,
-        apaar_id: apaarId,
-        parent_pan: parentPan,
-        admission_no: admissionNo,
-        applying_for_class: applyingClass,
-        category: category,
-        status: 'New',
-        notes: notes,
-      },
-    ])
+    const { data, error } = await supabase
+      .from('admissions')
+      .insert([
+        {
+          student_name: studentName,
+          gender: gender || null,
+          father_name: fatherName,
+          mother_name: motherName,
+          contact: contact,
+          apaar_id: apaarId,
+          parent_pan: parentPan,
+          admission_no: admissionNo.trim(),
+          applying_for_class: applyingClass,
+          category: category,
+          status: 'New',
+          notes: notes,
+        },
+      ])
+      .select()
+      .single()
 
     if (error) {
       setError(error.message)
     } else {
+      setMessage(`Enquiry add ho gayi. Registration No: ${data.registration_no}`)
       setStudentName('')
       setGender('')
       setFatherName('')
@@ -104,8 +111,23 @@ export default function AdmissionsPage() {
   }
 
   const handleAdmit = async (admission) => {
+    if (admittingId) return
+    setAdmittingId(admission.id)
     setError('')
     setMessage('')
+
+    const { data: fresh } = await supabase
+      .from('admissions')
+      .select('status')
+      .eq('id', admission.id)
+      .maybeSingle()
+
+    if (fresh && fresh.status === 'Admitted') {
+      setError('Ye student pehle hi admit ho chuka hai.')
+      await fetchAdmissions()
+      setAdmittingId(null)
+      return
+    }
 
     const { data: newStudent, error: studentError } = await supabase
       .from('students')
@@ -121,7 +143,8 @@ export default function AdmissionsPage() {
           mother_name: admission.mother_name,
           apaar_id: admission.apaar_id,
           parent_pan: admission.parent_pan,
-          admission_no: admission.admission_no,
+          admission_no: (admission.admission_no || '').trim() || null,
+          registration_no: admission.registration_no,
           category: admission.category,
         },
       ])
@@ -130,6 +153,7 @@ export default function AdmissionsPage() {
 
     if (studentError) {
       setError(studentError.message)
+      setAdmittingId(null)
       return
     }
 
@@ -140,8 +164,9 @@ export default function AdmissionsPage() {
       .eq('category', admission.category)
       .maybeSingle()
 
+    let feeNote = ''
     if (feeStructureMatch) {
-      await supabase.from('fees').insert([
+      const { error: feeError } = await supabase.from('fees').insert([
         {
           'student-id': newStudent.id,
           amount: feeStructureMatch.amount,
@@ -150,23 +175,30 @@ export default function AdmissionsPage() {
           status: feeStructureMatch.amount > 0 ? 'Unpaid' : 'Paid',
         },
       ])
+      feeNote = feeError
+        ? ` Fee banane me dikkat aayi: ${feeError.message}. Fee Generate page se bana lena.`
+        : ` Fee set hui: ₹${feeStructureMatch.amount}.`
+    } else {
+      feeNote =
+        ' Is class/category ki fee structure set nahi hai, baad me Fee Generate page se fee bana lena.'
     }
 
     const { error: updateError } = await supabase
       .from('admissions')
-      .update({ status: 'Admitted' })
+      .update({ status: 'Admitted', admission_no: newStudent.admission_no })
       .eq('id', admission.id)
 
     if (updateError) {
-      setError(updateError.message)
+      setError(
+        `Student ban gaya (Admission No: ${newStudent.admission_no}) lekin status update nahi hua: ${updateError.message}. Dobara Admit mat dabana.`
+      )
     } else {
       setMessage(
-        feeStructureMatch
-          ? `${admission.student_name} admit ho gaya! Fee automatically set hui: ₹${feeStructureMatch.amount}`
-          : `${admission.student_name} admit ho gaya! (Is class/category ke liye fee structure set nahi hai, fees manually add karo)`
+        `${admission.student_name} admit ho gaya! Admission No: ${newStudent.admission_no}.${feeNote} Roll number Roll Numbers page se de dena.`
       )
-      fetchAdmissions()
     }
+    await fetchAdmissions()
+    setAdmittingId(null)
   }
 
   const handleDelete = async (id) => {
@@ -188,7 +220,7 @@ export default function AdmissionsPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-gray-900 p-6">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         <h1 className="text-3xl font-bold text-indigo-700 mb-6">📋 Admissions & Enquiry</h1>
 
         {error && (
@@ -258,7 +290,7 @@ export default function AdmissionsPage() {
           />
           <input
             type="text"
-            placeholder="Admission No."
+            placeholder="Admission No. (khali chhodo, apne aap banega)"
             value={admissionNo}
             onChange={(e) => setAdmissionNo(e.target.value)}
             className={inputCls}
@@ -317,6 +349,8 @@ export default function AdmissionsPage() {
           <table className="w-full text-left text-gray-900 text-sm">
             <thead className="bg-indigo-50 text-indigo-800">
               <tr>
+                <th className="p-3">Reg. No</th>
+                <th className="p-3">Adm. No</th>
                 <th className="p-3">Student</th>
                 <th className="p-3">Gender</th>
                 <th className="p-3">Father</th>
@@ -332,6 +366,8 @@ export default function AdmissionsPage() {
             <tbody>
               {admissions.map((a) => (
                 <tr key={a.id} className="border-t border-gray-200">
+                  <td className="p-3 whitespace-nowrap">{a.registration_no || '—'}</td>
+                  <td className="p-3 whitespace-nowrap">{a.admission_no || '—'}</td>
                   <td className="p-3">{a.student_name}</td>
                   <td className="p-3">{a.gender || '—'}</td>
                   <td className="p-3">{a.father_name}</td>
@@ -357,9 +393,10 @@ export default function AdmissionsPage() {
                     {a.status !== 'Admitted' && (
                       <button
                         onClick={() => handleAdmit(a)}
-                        className="text-green-600 hover:underline text-sm font-medium"
+                        disabled={admittingId !== null}
+                        className="text-green-600 hover:underline text-sm font-medium disabled:opacity-40"
                       >
-                        Admit
+                        {admittingId === a.id ? 'Admit ho raha hai...' : 'Admit'}
                       </button>
                     )}
                     <button
@@ -373,7 +410,7 @@ export default function AdmissionsPage() {
               ))}
               {admissions.length === 0 && (
                 <tr>
-                  <td colSpan="10" className="p-4 text-center text-gray-400">
+                  <td colSpan="12" className="p-4 text-center text-gray-400">
                     Koi enquiry nahi hai abhi
                   </td>
                 </tr>
