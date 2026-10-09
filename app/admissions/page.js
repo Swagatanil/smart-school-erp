@@ -2,9 +2,13 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabaseClient'
 
+const CATEGORIES = ['General', 'OBC', 'SC', 'ST', 'EWS', 'RTE', 'Self-Finance']
+const GENDERS = ['Male', 'Female', 'Other']
+
 export default function AdmissionsPage() {
   const [admissions, setAdmissions] = useState([])
   const [studentName, setStudentName] = useState('')
+  const [gender, setGender] = useState('')
   const [fatherName, setFatherName] = useState('')
   const [motherName, setMotherName] = useState('')
   const [contact, setContact] = useState('')
@@ -60,6 +64,7 @@ export default function AdmissionsPage() {
     const { error } = await supabase.from('admissions').insert([
       {
         student_name: studentName,
+        gender: gender || null,
         father_name: fatherName,
         mother_name: motherName,
         contact: contact,
@@ -77,6 +82,7 @@ export default function AdmissionsPage() {
       setError(error.message)
     } else {
       setStudentName('')
+      setGender('')
       setFatherName('')
       setMotherName('')
       setContact('')
@@ -106,6 +112,7 @@ export default function AdmissionsPage() {
       .insert([
         {
           name: admission.student_name,
+          gender: admission.gender,
           class: admission.applying_for_class,
           section: '',
           roll_number: '',
@@ -176,6 +183,9 @@ export default function AdmissionsPage() {
     return 'bg-gray-100 text-gray-700'
   }
 
+  const inputCls = 'border border-gray-300 p-2 rounded-lg text-gray-900 placeholder-gray-400'
+  const selectCls = 'border border-gray-300 p-2 rounded-lg text-gray-900 bg-white'
+
   return (
     <div className="min-h-screen bg-slate-50 text-gray-900 p-6">
       <div className="max-w-6xl mx-auto">
@@ -201,29 +211,35 @@ export default function AdmissionsPage() {
             placeholder="Student Name"
             value={studentName}
             onChange={(e) => setStudentName(e.target.value)}
-            className="border border-gray-300 p-2 rounded-lg text-gray-900 placeholder-gray-400"
+            className={inputCls}
             required
           />
+          <select value={gender} onChange={(e) => setGender(e.target.value)} className={selectCls}>
+            <option value="">Gender</option>
+            {GENDERS.map((g) => (
+              <option key={g} value={g}>{g}</option>
+            ))}
+          </select>
           <input
             type="text"
             placeholder="Father Name"
             value={fatherName}
             onChange={(e) => setFatherName(e.target.value)}
-            className="border border-gray-300 p-2 rounded-lg text-gray-900 placeholder-gray-400"
+            className={inputCls}
           />
           <input
             type="text"
             placeholder="Mother Name"
             value={motherName}
             onChange={(e) => setMotherName(e.target.value)}
-            className="border border-gray-300 p-2 rounded-lg text-gray-900 placeholder-gray-400"
+            className={inputCls}
           />
           <input
             type="text"
             placeholder="Contact Number"
             value={contact}
             onChange={(e) => setContact(e.target.value)}
-            className="border border-gray-300 p-2 rounded-lg text-gray-900 placeholder-gray-400"
+            className={inputCls}
             required
           />
           <input
@@ -231,21 +247,21 @@ export default function AdmissionsPage() {
             placeholder="APAAR ID (optional)"
             value={apaarId}
             onChange={(e) => setApaarId(e.target.value)}
-            className="border border-gray-300 p-2 rounded-lg text-gray-900 placeholder-gray-400"
+            className={inputCls}
           />
           <input
             type="text"
             placeholder="Parent PAN (optional)"
             value={parentPan}
             onChange={(e) => setParentPan(e.target.value)}
-            className="border border-gray-300 p-2 rounded-lg text-gray-900 placeholder-gray-400"
+            className={inputCls}
           />
           <input
             type="text"
             placeholder="Admission No."
             value={admissionNo}
             onChange={(e) => setAdmissionNo(e.target.value)}
-            className="border border-gray-300 p-2 rounded-lg text-gray-900 placeholder-gray-400"
+            className={inputCls}
           />
           <input
             type="text"
@@ -255,7 +271,7 @@ export default function AdmissionsPage() {
               setApplyingClass(e.target.value)
               checkFee(e.target.value, category)
             }}
-            className="border border-gray-300 p-2 rounded-lg text-gray-900 placeholder-gray-400"
+            className={inputCls}
             required
           />
           <select
@@ -264,14 +280,13 @@ export default function AdmissionsPage() {
               setCategory(e.target.value)
               checkFee(applyingClass, e.target.value)
             }}
-            className="border border-gray-300 p-2 rounded-lg text-gray-900 bg-white"
+            className={selectCls}
             required
           >
             <option value="">Category</option>
-            <option value="RTE">RTE</option>
-            <option value="Self-Finance">Self-Finance</option>
-            <option value="General">General</option>
-            <option value="EWS">EWS</option>
+            {CATEGORIES.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
           </select>
 
           {expectedFee !== null && (
@@ -286,7 +301,7 @@ export default function AdmissionsPage() {
             placeholder="Notes (optional)"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            className="border border-gray-300 p-2 rounded-lg text-gray-900 placeholder-gray-400 md:col-span-3"
+            className={`${inputCls} md:col-span-3`}
             rows="2"
           />
           <button
@@ -303,8 +318,11 @@ export default function AdmissionsPage() {
             <thead className="bg-indigo-50 text-indigo-800">
               <tr>
                 <th className="p-3">Student</th>
+                <th className="p-3">Gender</th>
                 <th className="p-3">Father</th>
                 <th className="p-3">Contact</th>
+                <th className="p-3">APAAR ID</th>
+                <th className="p-3">Parent PAN</th>
                 <th className="p-3">Class</th>
                 <th className="p-3">Category</th>
                 <th className="p-3">Status</th>
@@ -315,8 +333,11 @@ export default function AdmissionsPage() {
               {admissions.map((a) => (
                 <tr key={a.id} className="border-t border-gray-200">
                   <td className="p-3">{a.student_name}</td>
+                  <td className="p-3">{a.gender || '—'}</td>
                   <td className="p-3">{a.father_name}</td>
                   <td className="p-3">{a.contact}</td>
+                  <td className="p-3">{a.apaar_id || '—'}</td>
+                  <td className="p-3">{a.parent_pan || '—'}</td>
                   <td className="p-3">{a.applying_for_class}</td>
                   <td className="p-3">{a.category}</td>
                   <td className="p-3">
@@ -352,7 +373,7 @@ export default function AdmissionsPage() {
               ))}
               {admissions.length === 0 && (
                 <tr>
-                  <td colSpan="7" className="p-4 text-center text-gray-400">
+                  <td colSpan="10" className="p-4 text-center text-gray-400">
                     Koi enquiry nahi hai abhi
                   </td>
                 </tr>

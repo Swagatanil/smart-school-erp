@@ -94,6 +94,9 @@ export default function FeeStructurePage() {
             <option value="Self-Finance">Self-Finance</option>
             <option value="General">General</option>
             <option value="EWS">EWS</option>
+            <option value="OBC">OBC</option>
+            <option value="SC">SC</option>
+            <option value="ST">ST</option>
           </select>
           <input
             type="number"

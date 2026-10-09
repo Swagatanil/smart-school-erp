@@ -3,7 +3,8 @@ import { useState } from 'react'
 import Papa from 'papaparse'
 import { createClient } from '@/lib/supabaseClient'
 
-const CATEGORIES = ['RTE', 'Self-Finance', 'General', 'EWS']
+const CATEGORIES = ['General', 'OBC', 'SC', 'ST', 'EWS', 'RTE', 'Self-Finance']
+const GENDERS = ['Male', 'Female', 'Other']
 const ROLES = ['Teacher', 'Principal', 'Admin Staff', 'Accountant', 'Support Staff']
 
 const TYPES = {
@@ -14,6 +15,7 @@ const TYPES = {
     note: 'Pehle Fee Structure import/set kar lo, phir Students.',
     columns: [
       { key: 'name', required: true, sample: 'Rahul Sharma' },
+      { key: 'gender', allowed: GENDERS, sample: 'Male' },
       { key: 'class', required: true, sample: '5' },
       { key: 'section', sample: 'A' },
       { key: 'roll_number', sample: '12' },
