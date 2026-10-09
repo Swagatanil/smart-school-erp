@@ -73,7 +73,8 @@ export default function Navbar() {
     { href: '/import', label: 'Import', access: 'admin' },
     { href: '/fee-generate', label: 'Fee Generate', access: 'admin-accountant' },
     { href: '/fee-collect', label: 'Fee Collect', access: 'admin-accountant' },
-   { href: '/roll-numbers', label: 'Roll Numbers', access: 'admin' },
+    { href: '/roll-numbers', label: 'Roll Numbers', access: 'admin' },
+    { href: '/marks-entry', label: 'Marks Entry', access: 'all' },
   ]
 
   const canSee = (access) => {
