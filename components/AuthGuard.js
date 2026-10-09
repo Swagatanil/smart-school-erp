@@ -17,6 +17,7 @@ const ROLE_RULES = [
   { path: '/fees-report', roles: ['Principal', 'Admin Staff', 'Accountant'] },
   { path: '/staff-attendance', roles: ['Principal', 'Admin Staff'] },
   { path: '/fee-generate', roles: ['Principal', 'Admin Staff', 'Accountant'] },
+  { path: '/fee-collect', roles: ['Principal', 'Admin Staff', 'Accountant'] },
 ]
 
 export default function AuthGuard({ children }) {

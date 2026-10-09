@@ -72,6 +72,7 @@ export default function Navbar() {
     { href: '/whatsapp', label: 'WhatsApp', access: 'all' },
     { href: '/import', label: 'Import', access: 'admin' },
     { href: '/fee-generate', label: 'Fee Generate', access: 'admin-accountant' },
+   { href: '/fee-collect', label: 'Fee Collect', access: 'admin-accountant' },
   ]
 
   const canSee = (access) => {
