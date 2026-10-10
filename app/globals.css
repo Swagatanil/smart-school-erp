@@ -24,3 +24,16 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+/* Phone par tables ko screen se bahar jaane se roko */
+@media (max-width: 767px) {
+  div:not(.overflow-x-auto):not(.overflow-auto):not(.overflow-y-auto) > table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  /* Phone par page ki side ki jagah kam karo */
+  .p-6 {
+    padding: 1rem;
+  }
+}
