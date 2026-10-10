@@ -76,6 +76,8 @@ export default function Navbar() {
     { href: '/roll-numbers', label: 'Roll Numbers', access: 'admin' },
     { href: '/marks-entry', label: 'Marks Entry', access: 'all' },
     { href: '/approvals', label: 'Approvals', access: 'admin' },
+    { href: '/class-results', label: 'Class Results', access: 'all' },
+    { href: '/teacher-classes', label: 'Teacher Classes', access: 'admin' },
   ]
 
   const canSee = (access) => {
