@@ -19,6 +19,7 @@ const ROLE_RULES = [
   { path: '/fee-generate', roles: ['Principal', 'Admin Staff', 'Accountant'] },
   { path: '/fee-collect', roles: ['Principal', 'Admin Staff', 'Accountant'] },
   { path: '/roll-numbers', roles: ['Principal', 'Admin Staff'] },
+  { path: '/approvals', roles: ['Principal', 'Admin Staff'] },
 ]
 
 export default function AuthGuard({ children }) {
@@ -89,7 +90,7 @@ export default function AuthGuard({ children }) {
           <h1 className="text-2xl font-bold text-gray-800">Access Denied</h1>
           <p className="text-gray-500 mt-2">
             {status === 'not-staff'
-              ? 'Ye account staff list me registered nahi hai. Admin se apna email Staff me add karwao.'
+            ? 'Aapka signup mil gaya hai. Admin approve karega tab access milega. Approval ke baad logout karke dobara login karo.'
               : 'Aapko ye page dekhne ki permission nahi hai.'}
           </p>
           <button

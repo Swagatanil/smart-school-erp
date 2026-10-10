@@ -75,6 +75,7 @@ export default function Navbar() {
     { href: '/fee-collect', label: 'Fee Collect', access: 'admin-accountant' },
     { href: '/roll-numbers', label: 'Roll Numbers', access: 'admin' },
     { href: '/marks-entry', label: 'Marks Entry', access: 'all' },
+    { href: '/approvals', label: 'Approvals', access: 'admin' },
   ]
 
   const canSee = (access) => {

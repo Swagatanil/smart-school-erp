@@ -36,6 +36,7 @@ function Card({ href, icon, label, value, sub, color }) {
 export default function Dashboard() {
   const [notices, setNotices] = useState([])
   const [role, setRole] = useState(null)
+  const [pendingCount, setPendingCount] = useState(0)
   const [stats, setStats] = useState({
     totalStudents: 0,
     present: 0,
@@ -115,6 +116,10 @@ export default function Dashboard() {
           }
         }
 
+        if (admin) {
+        const { data: pend } = await supabase.rpc('pending_signups')
+        setPendingCount(pend ? pend.length : 0)
+        }
         setStats(next)
       } catch (e) {
         console.error(e)
@@ -137,7 +142,14 @@ export default function Dashboard() {
           <h1 className="text-3xl font-bold text-gray-800">Welcome to School ERP Dashboard</h1>
           <p className="text-gray-500 mt-2">Kisi bhi card par click karke detail dekho</p>
         </div>
-
+       {admin && pendingCount > 0 && (
+          <Link
+            href="/approvals"
+            className="block bg-orange-50 border border-orange-300 text-orange-800 rounded-xl p-4 mb-6 text-center font-semibold hover:bg-orange-100 transition"
+          >
+            🔔 {pendingCount} naye signup ki approval baaki hai. Dekho →
+          </Link>
+        )}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
           <Card
             href="/students"
