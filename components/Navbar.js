@@ -78,6 +78,7 @@ export default function Navbar() {
     { href: '/approvals', label: 'Approvals', access: 'admin' },
     { href: '/class-results', label: 'Class Results', access: 'all' },
     { href: '/teacher-classes', label: 'Teacher Classes', access: 'admin' },
+    { href: '/marks-import', label: 'Marks Import', access: 'admin' },
   ]
 
   const canSee = (access) => {
