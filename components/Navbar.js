@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { useState, useEffect, useRef } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabaseClient'
+import { useSchool } from '@/lib/useSchool'
 
 const ADMIN = ['Principal', 'Admin Staff']
 const ACCOUNTANT = ['Accountant']
@@ -57,6 +58,7 @@ const GROUPS = [
       { href: '/transport', label: 'Transport', access: 'all' },
       { href: '/inventory', label: 'Inventory', access: 'all' },
       { href: '/whatsapp', label: 'WhatsApp', access: 'all' },
+     { href: '/school-settings', label: 'School Settings', access: 'admin' },
     ],
   },
 ]
@@ -73,6 +75,7 @@ export default function Navbar() {
   const router = useRouter()
   const pathname = usePathname()
   const supabase = createClient()
+  const school = useSchool()
 
   const loadUser = async () => {
     const { data: { user } } = await supabase.auth.getUser()
@@ -152,8 +155,12 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex items-center justify-between h-16 gap-3">
           <Link href={homeHref} className="flex items-center gap-2 font-bold text-lg min-w-0">
-            <span className="text-2xl">🏫</span>
-            <span className="truncate">ABC Public School</span>
+                       {school.logo ? (
+              <img src={school.logo} alt="" className="h-8 w-8 rounded object-contain bg-white" />
+            ) : (
+              <span className="text-2xl">🏫</span>
+            )}
+            <span className="truncate">{school.name}</span>
           </Link>
 
           {/* Laptop menu */}

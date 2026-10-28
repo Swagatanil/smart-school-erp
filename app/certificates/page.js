@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabaseClient'
+import { useSchool } from '@/lib/useSchool'
 
 export default function CertificatesPage() {
   const [students, setStudents] = useState([])
@@ -9,6 +10,7 @@ export default function CertificatesPage() {
   const [certType, setCertType] = useState('Bonafide')
   const [purpose, setPurpose] = useState('')
   const supabase = createClient()
+  const school = useSchool()
 
   const fetchStudents = async () => {
     const { data } = await supabase.from('students').select('*').order('name')
@@ -83,9 +85,15 @@ export default function CertificatesPage() {
         {studentInfo && (
           <div className="bg-white p-10 rounded-xl shadow-md border border-gray-200 print:shadow-none print:border-0">
             <div className="text-center border-b-2 border-indigo-700 pb-4 mb-8">
-              <div className="text-4xl mb-2">🏫</div>
-              <h2 className="text-2xl font-bold text-gray-800">ABC Public School</h2>
-              <p className="text-sm text-gray-500">123, School Road, Your City</p>
+                           {school.logo ? (
+                <img src={school.logo} alt="" className="h-16 mx-auto mb-2 object-contain" />
+              ) : (
+                <div className="text-4xl mb-2">🏫</div>
+              )}
+              <h2 className="text-2xl font-bold text-gray-800">{school.name}</h2>
+              <p className="text-sm text-gray-500">{school.address}</p>
+              {school.phone && <p className="text-sm text-gray-500">Phone: {school.phone}</p>} 
+
             </div>
 
             <h3 className="text-xl font-bold text-center uppercase tracking-wide text-indigo-700 mb-8">

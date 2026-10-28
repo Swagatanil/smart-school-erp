@@ -1,8 +1,9 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabaseClient'
+import { useSchool } from '@/lib/useSchool'
 
-const SCHOOL = 'ABC Public School'
+
 
 const waLink = (phone, text) => {
   let n = String(phone || '').replace(/\D/g, '')
@@ -48,6 +49,23 @@ export default function WhatsAppPage() {
   const [month, setMonth] = useState(new Date().toISOString().slice(0, 7))
   const [error, setError] = useState('')
   const supabase = createClient()
+  const school = useSchool()
+  const SCHOOL = school.name
+    const [canFees, setCanFees] = useState(false)
+
+  useEffect(() => {
+    const loadRole = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data } = await supabase
+        .from('staff')
+        .select('role')
+        .ilike('email', user.email)
+        .maybeSingle()
+      setCanFees(!!data && ['Principal', 'Admin Staff', 'Accountant'].includes(data.role))
+    }
+    loadRole()
+  }, [])
 
   useEffect(() => {
     const load = async () => {
@@ -201,7 +219,13 @@ export default function WhatsAppPage() {
                   </p>
                 </div>
 
-                <MessageCard title="💰 Fees ki jaankari" text={feesMsg} phone={selected.parent_contact} />
+                                {canFees ? (
+                  <MessageCard title="💰 Fees ki jaankari" text={feesMsg} phone={selected.parent_contact} />
+                ) : (
+                  <p className="bg-gray-100 text-gray-600 border border-gray-200 p-3 rounded-lg text-sm">
+                    💰 Fees ki jaankari sirf Admin aur Accountant bhej sakte hain.
+                  </p>
+                )}
 
                 <div>
                   {examNames.length > 1 && (

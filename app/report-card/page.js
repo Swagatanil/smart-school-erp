@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabaseClient'
+import { useSchool } from '@/lib/useSchool'
 
 export default function ReportCardPage() {
   const [students, setStudents] = useState([])
@@ -9,6 +10,7 @@ export default function ReportCardPage() {
   const [marks, setMarks] = useState([])
   const [error, setError] = useState('')
   const supabase = createClient()
+  const school = useSchool()
 
   const fetchStudents = async () => {
     const { data } = await supabase.from('students').select('*').order('name')
@@ -92,7 +94,14 @@ export default function ReportCardPage() {
         {studentInfo && (
           <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 print:shadow-none">
             <div className="text-center border-b border-gray-200 pb-4 mb-4">
-              <h2 className="text-2xl font-bold text-gray-800">🏫 School Report Card</h2>
+                {school.logo ? (
+                <img src={school.logo} alt="" className="h-16 mx-auto mb-2 object-contain" />
+              ) : (
+                <div className="text-4xl mb-2">🏫</div>
+              )}
+              <h2 className="text-2xl font-bold text-gray-800">{school.name}</h2>
+              {school.address && <p className="text-sm text-gray-500">{school.address}</p>}
+              <p className="text-sm text-gray-500">Report Card</p>
               <p className="text-gray-600 mt-2">
                 <strong>{studentInfo.name}</strong> — Class {studentInfo.class} {studentInfo.section}
               </p>

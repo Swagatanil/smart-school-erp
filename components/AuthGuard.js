@@ -22,6 +22,7 @@ const ROLE_RULES = [
   { path: '/approvals', roles: ['Principal', 'Admin Staff'] },
   { path: '/teacher-classes', roles: ['Principal', 'Admin Staff'] },
   { path: '/marks-import', roles: ['Principal', 'Admin Staff'] },
+  { path: '/school-settings', roles: ['Principal', 'Admin Staff'] },
 ]
 
 export default function AuthGuard({ children }) {

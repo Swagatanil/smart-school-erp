@@ -2,8 +2,9 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabaseClient'
+import { useSchool } from '@/lib/useSchool'
 
-const SCHOOL = 'ABC Public School'
+
 const MODES = ['Cash', 'UPI', 'Cheque', 'Bank Transfer']
 
 const todayStr = () => {
@@ -67,6 +68,7 @@ export default function FeeCollectPage() {
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const supabase = createClient()
+ const school = useSchool()
 
   const search = async (e) => {
     e.preventDefault()
@@ -213,9 +215,15 @@ export default function FeeCollectPage() {
           <div className="mb-6">
             <div className="bg-white p-8 rounded-xl shadow-md border border-gray-300">
               <div className="text-center border-b-2 border-indigo-700 pb-3 mb-4">
-                <div className="text-3xl">🏫</div>
-                <h2 className="text-xl font-bold text-gray-900">{SCHOOL}</h2>
-                <p className="text-sm text-gray-500">Fee Receipt</p>
+                              {school.logo ? (
+                  <img src={school.logo} alt="" className="h-14 mx-auto object-contain" />
+                ) : (
+                  <div className="text-3xl">🏫</div>
+                )}
+                <h2 className="text-xl font-bold text-gray-900">{school.name}</h2>
+                {school.address && <p className="text-xs text-gray-500">{school.address}</p>}
+                {school.phone && <p className="text-xs text-gray-500">Phone: {school.phone}</p>}
+                <p className="text-sm text-gray-500 mt-1">Fee Receipt</p>  
               </div>
 
               <div className="flex justify-between text-sm mb-4 text-gray-800">
