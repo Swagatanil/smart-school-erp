@@ -4,7 +4,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabaseClient'
 
 // Ye pages bina staff login ke khul sakte hain
-const PUBLIC_PATHS = ['/', '/login', '/signup', '/parent-login', '/parent-dashboard']
+const PUBLIC_PATHS = ['/', '/login', '/signup', '/parent-login', '/parent-dashboard', '/forgot-password', '/reset-password']
 
 // Kis page ko kaunse roles dekh sakte hain (baaki sab pages: koi bhi staff)
 const ROLE_RULES = [

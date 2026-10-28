@@ -129,6 +129,11 @@ export default function LoginPage() {
             >
               {loading ? 'Logging in...' : 'Staff Login'}
             </button>
+                        <p className="text-sm text-center mt-4">
+              <a href="/forgot-password" className="text-indigo-600 hover:underline">
+                Password bhul gaye?
+              </a>
+            </p>
             <p className="text-sm text-center mt-6 text-gray-600">
               Account nahi hai?{' '}
               <a href="/signup" className="text-indigo-600 font-medium hover:underline">
