@@ -40,6 +40,7 @@ const GROUPS = [
       { href: '/fee-generate', label: 'Fee Generate', access: 'admin-accountant' },
       { href: '/fee-collect', label: 'Fee Collect', access: 'admin-accountant' },
       { href: '/fees-report', label: 'Fees Report', access: 'admin-accountant' },
+      { href: '/daily-collection', label: 'Daily Collection', access: 'admin-accountant' },
     ],
   },
   {
