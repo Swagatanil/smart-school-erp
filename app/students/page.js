@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabaseClient'
+import Link from 'next/link'
 
 const CATEGORIES = ['General', 'OBC', 'SC', 'ST', 'EWS', 'RTE', 'Self-Finance']
 const GENDERS = ['Male', 'Female', 'Other']
@@ -212,7 +213,11 @@ export default function StudentsPage() {
             <tbody>
               {filteredStudents.map((s) => (
                 <tr key={s.id} className="border-t border-gray-200">
-                  <td className="p-3">{s.name}</td>
+                   <td className="p-3">
+                    <Link href={`/students/${s.id}`} className="text-indigo-700 font-medium hover:underline">
+                      {s.name}
+                    </Link>
+                  </td>
                   <td className="p-3">{s.gender || '—'}</td>
                   <td className="p-3">{s.class}</td>
                   <td className="p-3">{s.section}</td>
