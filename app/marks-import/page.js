@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
-import Papa from 'papaparse'
+ import Papa from '@/lib/papaCompat'
+import PasteBox from '@/components/PasteBox'
 import { createClient } from '@/lib/supabaseClient'
 import { fetchAll } from '@/lib/fetchAll'
 
@@ -184,8 +185,8 @@ export default function MarksImportPage() {
     setRaws(null)
     setFileName(file.name)
 
-    if (!file.name.toLowerCase().endsWith('.csv')) {
-      setFileError('Sirf .csv file chalegi. Excel me File → Save As → "CSV UTF-8" chuno.')
+       if (!/\.(csv|xlsx|xls|ods|tsv)$/i.test(file.name)) {
+      setFileError('Sirf Excel (.xlsx) ya CSV file chalegi. Google Sheet me File → Download → Microsoft Excel (.xlsx) chuno.')
       return
     }
 
@@ -418,14 +419,20 @@ export default function MarksImportPage() {
               System me abhi koi student nahi hai. Pehle students import ya add karo.
             </p>
           ) : (
-            <input
-              key={inputKey}
-              type="file"
-              accept=".csv"
-              onChange={handleFile}
-              disabled={importing}
-              className="text-sm text-gray-700"
-            />
+              <>
+              <input
+                key={inputKey}
+                type="file"
+                accept=".csv,.xlsx,.xls,.ods"
+                onChange={handleFile}
+                disabled={importing}
+                className="text-sm text-gray-700"
+              />
+              <PasteBox
+                disabled={importing}
+                onText={(t) => handleFile({ target: { files: [new File([t], 'pasted.tsv')] } })}
+              />
+            </>
           )}
         </div>
 

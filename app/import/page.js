@@ -1,11 +1,13 @@
 'use client'
 import { useState } from 'react'
-import Papa from 'papaparse'
+import Papa from '@/lib/papaCompat'
+import PasteBox from '@/components/PasteBox'
 import { createClient } from '@/lib/supabaseClient'
 
 const CATEGORIES = ['General', 'OBC', 'SC', 'ST', 'EWS', 'RTE', 'Self-Finance']
 const GENDERS = ['Male', 'Female', 'Other']
 const ROLES = ['Teacher', 'Principal', 'Admin Staff', 'Accountant', 'Support Staff']
+const SECTIONS = ['A', 'B']
 
 const TYPES = {
   students: {
@@ -17,7 +19,7 @@ const TYPES = {
       { key: 'name', required: true, sample: 'Rahul Sharma' },
       { key: 'gender', allowed: GENDERS, sample: 'Male' },
       { key: 'class', required: true, sample: '5' },
-      { key: 'section', sample: 'A' },
+      { key: 'section', allowed: SECTIONS, sample: 'A' },
       { key: 'roll_number', sample: '12' },
       { key: 'parent_contact', type: 'phone', sample: '9876543210' },
       { key: 'father_name', sample: 'Suresh Sharma' },
@@ -181,8 +183,8 @@ export default function ImportPage() {
     setRows(null)
     setFileName(file.name)
 
-    if (!file.name.toLowerCase().endsWith('.csv')) {
-      setFileError('Sirf .csv file chalegi. Excel me File → Save As → "CSV UTF-8" chuno.')
+    if (!/\.(csv|xlsx|xls|ods|tsv)$/i.test(file.name)) {
+      setFileError('Sirf Excel (.xlsx) ya CSV file chalegi. Google Sheet me File → Download → Microsoft Excel (.xlsx) chuno.')
       return
     }
 
@@ -315,10 +317,14 @@ export default function ImportPage() {
             <input
               key={inputKey}
               type="file"
-              accept=".csv"
+              accept=".csv,.xlsx,.xls,.ods"
               onChange={handleFile}
               disabled={importing || checking}
               className="text-sm text-gray-700"
+            />
+            <PasteBox
+              disabled={importing || checking}
+              onText={(t) => handleFile({ target: { files: [new File([t], 'pasted.tsv')] } })}
             />
           </div>
         </div>

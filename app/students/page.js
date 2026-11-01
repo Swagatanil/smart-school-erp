@@ -151,13 +151,11 @@ export default function StudentsPage() {
             className={inputCls}
             required
           />
-          <input
-            type="text"
-            placeholder="Section (e.g. A)"
-            value={section}
-            onChange={(e) => setSection(e.target.value)}
-            className={inputCls}
-          />
+          <select value={section} onChange={(e) => setSection(e.target.value)} className={inputCls}>
+            <option value="">Section</option>
+            <option value="A">A</option>
+            <option value="B">B</option>
+          </select>
           <input
             type="text"
             placeholder="Roll Number"
