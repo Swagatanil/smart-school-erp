@@ -59,6 +59,143 @@ function Card({ href, onClick, icon, label, value, sub, color, active, hint = 'D
   return <div className={cls}>{body}</div>
 }
 
+// ===== Class-wise vertical bar chart (sab classes ek saath, bina scroll) =====
+function ClassChart({ data }) {
+  const [metric, setMetric] = useState('avg')
+  const [sel, setSel] = useState(null)
+
+  const rows = [...data].sort((a, b) =>
+    natural(`${a.class} ${a.section || ''}`, `${b.class} ${b.section || ''}`)
+  )
+  const key = metric === 'avg' ? 'avg_pct' : 'pass_pct'
+  const color = metric === 'avg' ? '#4f46e5' : '#16a34a'
+  const val = (r) => Math.min(Math.max(Number(r[key]) || 0, 0), 100)
+  const picked = sel !== null && rows[sel] ? rows[sel] : null
+  const dense = rows.length > 14
+
+  const btn = (m, label, on) => (
+    <button
+      type="button"
+      onClick={() => setMetric(m)}
+      className={`px-3 py-1 rounded-full text-xs font-semibold border transition ${
+        on
+          ? m === 'avg'
+            ? 'bg-indigo-600 text-white border-indigo-600'
+            : 'bg-green-600 text-white border-green-600'
+          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+      }`}
+    >
+      {label}
+    </button>
+  )
+
+  return (
+    <div className="bg-white rounded-xl shadow-md border border-gray-200 p-4">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+        <h3 className="font-bold text-gray-800">Class-wise result</h3>
+        <div className="flex gap-2">
+          {btn('avg', 'Average %', metric === 'avg')}
+          {btn('pass', 'Pass %', metric === 'pass')}
+        </div>
+      </div>
+
+      <div className="flex">
+        <div className="relative w-8 h-[220px] shrink-0">
+          <div className="absolute bottom-0 left-0 right-0 h-[200px]">
+            {[0, 25, 50, 75, 100].map((g) => (
+              <span
+                key={g}
+                className="absolute right-1 text-[10px] text-gray-400"
+                style={{ bottom: `${g}%`, transform: 'translateY(50%)' }}
+              >
+                {g}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <div className="relative flex-1 min-w-0 h-[220px]">
+          <div className="absolute bottom-0 left-0 right-0 h-[200px] border-l border-b border-gray-300">
+            {[25, 50, 75, 100].map((g) => (
+              <div
+                key={g}
+                className="absolute left-0 right-0 border-t border-gray-100"
+                style={{ bottom: `${g}%` }}
+              />
+            ))}
+            <div className="absolute inset-0 flex items-end gap-[2px] px-[2px]">
+              {rows.map((r, i) => {
+                const v = val(r)
+                const on = sel === i
+                return (
+                  <button
+                    type="button"
+                    key={i}
+                    onClick={() => setSel(on ? null : i)}
+                    title={`Class ${r.class} ${r.section || ''}: ${v}%`}
+                    className="relative flex-1 min-w-0 h-full"
+                  >
+                    <span
+                      className={`absolute left-0 right-0 text-center font-semibold text-gray-700 ${
+                        dense ? 'text-[8px] sm:text-[10px]' : 'text-[10px] sm:text-xs'
+                      }`}
+                      style={{ bottom: `${v}%` }}
+                    >
+                      {Math.round(v)}
+                    </span>
+                    <span
+                      className="absolute bottom-0 left-1/2 w-full max-w-[30px] rounded-t"
+                      style={{
+                        height: `${v}%`,
+                        backgroundColor: color,
+                        opacity: sel === null || on ? 1 : 0.4,
+                        transform: 'translateX(-50%)',
+                      }}
+                    />
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex">
+        <div className="w-8 shrink-0" />
+        <div className="flex-1 min-w-0 flex gap-[2px] px-[2px] mt-1">
+          {rows.map((r, i) => (
+            <div
+              key={i}
+              className={`flex-1 min-w-0 text-center leading-tight ${dense ? 'text-[9px]' : 'text-[11px]'} ${
+                sel === i ? 'font-bold text-gray-900' : 'text-gray-600'
+              }`}
+            >
+              <div>{r.class}</div>
+              <div className="text-gray-400">{r.section || ''}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <p className="text-xs text-gray-400 mt-3">
+        Upar wali line class hai, neeche section. Number {metric === 'avg' ? 'average' : 'pass'} % hai.
+      </p>
+
+      {picked ? (
+        <div className="mt-3 bg-indigo-50 rounded-lg p-3 text-sm text-gray-800">
+          <strong>
+            Class {picked.class}
+            {picked.section ? ` - ${picked.section}` : ''}
+          </strong>
+          : {picked.count} bachche, Average {picked.avg_pct}%, Pass {picked.pass_pct}%
+        </div>
+      ) : (
+        <p className="mt-2 text-xs text-gray-500">Kisi bar par tap karo, uski detail yahan dikhegi.</p>
+      )}
+    </div>
+  )
+}
+
 export default function Dashboard() {
   const [notices, setNotices] = useState([])
   const [me, setMe] = useState(null)
@@ -418,33 +555,7 @@ export default function Dashboard() {
                   </div>
                 )}
 
-                {res.by_class && res.by_class.length > 1 && (
-                  <div className="bg-white rounded-xl shadow-md border border-gray-200 p-4">
-                    <h3 className="font-bold text-gray-800 mb-3">Class-wise (average aur pass %)</h3>
-                    {[...res.by_class]
-                      .sort((a, b) => natural(`${a.class} ${a.section}`, `${b.class} ${b.section}`))
-                      .map((c, i) => (
-                        <div key={i} className="py-2 border-t border-gray-100 first:border-t-0">
-                          <div className="flex flex-wrap justify-between gap-x-3 text-sm text-gray-800 mb-1">
-                            <span className="font-medium">
-                              Class {c.class}
-                              {c.section ? ` - ${c.section}` : ''}{' '}
-                              <span className="text-gray-400 font-normal">({c.count} bachche)</span>
-                            </span>
-                            <span>
-                              Avg {c.avg_pct}% • Pass {c.pass_pct}%
-                            </span>
-                          </div>
-                          <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                            <div
-                              className="h-2 bg-indigo-500 rounded-full"
-                              style={{ width: Math.min(Number(c.avg_pct), 100) + '%' }}
-                            />
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                )}
+                {res.by_class && res.by_class.length > 0 && <ClassChart key={exam} data={res.by_class} />}
               </>
             )}
           </section>
