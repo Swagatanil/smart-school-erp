@@ -62,7 +62,7 @@ export default function AuthGuard({ children }) {
       const rule = ROLE_RULES.find(
         (r) => pathname === r.path || pathname.startsWith(r.path + '/')
       )
-      if (rule && !rule.roles.includes(role)) {
+      if (rule && role !== 'Demo' && !rule.roles.includes(role)) {
         setStatus('denied')
         return
       }

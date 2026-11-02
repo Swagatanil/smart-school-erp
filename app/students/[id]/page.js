@@ -4,7 +4,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabaseClient'
 import { MarksCharts, AttendanceCalendar } from '@/components/StudentCharts'
 
-const ADMIN = ['Principal', 'Admin Staff']
+const ADMIN = ['Principal', 'Admin Staff', 'Demo']
 
 const money = (n) => '₹' + Number(n || 0).toLocaleString('en-IN')
 const receiptNo = (id) => 'RCPT-' + String(id).padStart(6, '0')

@@ -13,9 +13,10 @@ const show = (p) => (p === null ? '—' : p + '%')
 const money = (n) => '₹' + Number(n || 0).toLocaleString('en-IN')
 const natural = (a, b) => String(a).localeCompare(String(b), undefined, { numeric: true })
 const medal = (r) => (r === 1 ? '🥇' : r === 2 ? '🥈' : r === 3 ? '🥉' : r)
-const ADMIN_ROLES = ['Principal', 'Admin Staff']
+const ADMIN_ROLES = ['Principal', 'Admin Staff', 'Demo']
 
 const titleOf = (role) => {
+  if (role === 'Demo') return 'Demo Dashboard (sirf dekho)'
   if (ADMIN_ROLES.includes(role)) return 'Admin Dashboard'
   if (role === 'Teacher') return 'Teacher Dashboard'
   if (role === 'Accountant') return 'Accountant Dashboard'

@@ -5,7 +5,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabaseClient'
 import { useSchool } from '@/lib/useSchool'
 
-const ADMIN = ['Principal', 'Admin Staff']
+const ADMIN = ['Principal', 'Admin Staff', 'Demo']
 const ACCOUNTANT = ['Accountant']
 
 const GROUPS = [
@@ -88,6 +88,7 @@ export default function Navbar() {
         .ilike('email', user.email)
         .maybeSingle()
       setRole(data ? data.role : 'Unknown')
+       localStorage.setItem('demoMode', data && data.role === 'Demo' ? '1' : '0')
       setName(data ? data.name : '')
     } else {
       setIsStaffLoggedIn(false)
@@ -125,6 +126,7 @@ export default function Navbar() {
   const handleLogout = async () => {
     await supabase.auth.signOut()
     localStorage.removeItem('parentMobile')
+    localStorage.removeItem('demoMode')
     setIsStaffLoggedIn(false)
     setIsParent(false)
     setRole(null)
@@ -153,6 +155,11 @@ export default function Navbar() {
 
   return (
     <nav ref={navRef} className="bg-indigo-700 text-white shadow-md relative z-50">
+       {role === 'Demo' && (
+        <div className="bg-yellow-300 text-yellow-900 text-xs text-center py-1 font-medium">
+          Demo login: sirf dekh sakte ho, kuch badal nahi sakte
+        </div>
+      )}
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex items-center justify-between h-16 gap-3">
           <Link href={homeHref} className="flex items-center gap-2 font-bold text-lg min-w-0">
